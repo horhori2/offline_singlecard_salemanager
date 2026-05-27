@@ -1,0 +1,869 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>재고 관리 대시보드</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.19.0/dist/tabler-icons.min.css">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#f8f7f4;--surface:#ffffff;--border:#e8e6e0;--border-hover:#d0cec8;
+  --text:#1a1a1a;--text2:#6b6966;--text3:#9b9895;
+  --green:#2d7d46;--green-bg:#eaf5ee;
+  --amber:#8a5c0a;--amber-bg:#fdf3e0;
+  --red:#b93535;--red-bg:#fceaea;
+  --blue:#1a5fa8;--blue-bg:#e8f0fb;
+  --accent:#1a1a1a;
+  --radius:10px;--radius-sm:6px;
+}
+body{font-family:'Pretendard','Apple SD Gothic Neo','Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.6}
+a{text-decoration:none;color:inherit}
+
+/* 레이아웃 */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);padding:0;flex-shrink:0;display:flex;flex-direction:column}
+.main{flex:1;padding:28px 32px;overflow-y:auto}
+
+/* 사이드바 */
+.brand{padding:20px 20px 16px;border-bottom:1px solid var(--border);display:flex;align-items:center;gap:10px}
+.brand-dot{width:28px;height:28px;background:var(--accent);border-radius:8px;display:flex;align-items:center;justify-content:center}
+.brand-dot i{font-size:16px;color:#fff}
+.brand-name{font-size:15px;font-weight:600;letter-spacing:-0.3px}
+.brand-sub{font-size:11px;color:var(--text3);margin-top:1px}
+.nav{padding:12px 10px;flex:1}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:var(--radius-sm);cursor:pointer;color:var(--text2);font-size:13px;transition:all .12s;margin-bottom:2px;border:none;background:none;width:100%;text-align:left}
+.nav-item:hover{background:var(--bg);color:var(--text)}
+.nav-item.on{background:var(--accent);color:#fff}
+.nav-item i{font-size:17px;flex-shrink:0}
+.sidebar-footer{padding:14px 16px;border-top:1px solid var(--border);font-size:11px;color:var(--text3)}
+.status-dot{width:6px;height:6px;border-radius:50%;background:#2d7d46;display:inline-block;margin-right:5px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+
+/* 페이지 헤더 */
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:24px}
+.page-title{font-size:20px;font-weight:600;letter-spacing:-0.4px}
+.page-sub{font-size:13px;color:var(--text3);margin-top:2px}
+.header-actions{display:flex;gap:8px;align-items:center}
+
+/* 버튼 */
+.btn{padding:8px 16px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:13px;cursor:pointer;display:inline-flex;align-items:center;gap:6px;font-family:inherit;transition:all .12s;font-weight:500}
+.btn:hover{background:var(--bg);border-color:var(--border-hover)}
+.btn-primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn-primary:hover{background:#333;border-color:#333}
+.btn-sm{padding:5px 11px;font-size:12px}
+.btn-danger{color:var(--red);border-color:var(--red-bg)}
+.btn-danger:hover{background:var(--red-bg)}
+.btn-confirm{color:var(--green);border-color:var(--green-bg);background:var(--green-bg)}
+.btn-confirm:hover{background:#d0edda;border-color:#b8dfc4}
+
+/* 메트릭 카드 */
+.metrics{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-bottom:24px}
+.metric{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px}
+.metric-label{font-size:12px;color:var(--text3);font-weight:500;text-transform:uppercase;letter-spacing:.5px;margin-bottom:8px}
+.metric-val{font-size:28px;font-weight:600;letter-spacing:-1px;line-height:1}
+.metric-sub{font-size:12px;color:var(--text3);margin-top:6px;display:flex;align-items:center;gap:4px}
+.metric-ok{color:var(--green)}
+.metric-warn{color:var(--amber)}
+.metric-danger{color:var(--red)}
+
+/* 패널 */
+.panel{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px}
+.panel-header{padding:16px 20px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between}
+.panel-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:8px}
+.panel-body{padding:20px}
+
+/* 검색 */
+.search-wrap{position:relative;flex:1;max-width:320px}
+.search-wrap i{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:var(--text3);font-size:16px;pointer-events:none}
+.search-wrap input{padding-left:34px;width:100%}
+input[type=text],input[type=number],input[type=file],select{
+  padding:8px 12px;border:1px solid var(--border);border-radius:var(--radius-sm);
+  font-size:13px;font-family:inherit;color:var(--text);background:var(--surface);
+  outline:none;transition:border .12s;width:100%
+}
+input:focus,select:focus{border-color:var(--accent)}
+
+/* 테이블 */
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding:10px 14px;border-bottom:1px solid var(--border);white-space:nowrap}
+td{padding:12px 14px;border-bottom:1px solid var(--border);color:var(--text);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:var(--bg)}
+.mono{font-family:'SF Mono','Fira Code',monospace;font-size:12px;color:var(--text2)}
+.prod-img{width:40px;height:40px;border-radius:6px;object-fit:cover;border:1px solid var(--border);flex-shrink:0;background:var(--bg)}
+.prod-img-placeholder{width:40px;height:40px;border-radius:6px;border:1px solid var(--border);background:var(--bg);display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--text3);font-size:18px}
+
+/* 배지 */
+.badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:20px;white-space:nowrap}
+.badge-ok{background:var(--green-bg);color:var(--green)}
+.badge-low{background:var(--amber-bg);color:var(--amber)}
+.badge-zero{background:var(--red-bg);color:var(--red)}
+.badge-blue{background:var(--blue-bg);color:var(--blue)}
+.badge-gray{background:var(--bg);color:var(--text2);border:1px solid var(--border)}
+
+/* 업로드 */
+.upload-zone{border:2px dashed var(--border);border-radius:var(--radius);padding:3rem;text-align:center;cursor:pointer;transition:all .15s;margin-bottom:16px}
+.upload-zone:hover,.upload-zone.drag{border-color:var(--accent);background:var(--bg)}
+.upload-zone i{font-size:40px;color:var(--text3);display:block;margin-bottom:12px}
+.upload-zone h3{font-size:15px;font-weight:600;margin-bottom:6px}
+.upload-zone p{font-size:13px;color:var(--text2);margin-bottom:4px}
+.upload-zone small{font-size:12px;color:var(--text3)}
+#file-input{display:none}
+.result-panel{border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;display:none}
+.result-panel.on{display:block}
+.result-header{padding:14px 18px;background:var(--bg);border-bottom:1px solid var(--border);font-weight:600;font-size:13px;display:flex;align-items:center;gap:8px}
+.result-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:0;border-bottom:1px solid var(--border)}
+.result-stat{padding:14px 18px;text-align:center;border-right:1px solid var(--border)}
+.result-stat:last-child{border-right:none}
+.result-stat-val{font-size:22px;font-weight:600}
+.result-stat-label{font-size:11px;color:var(--text3);margin-top:2px}
+.result-items{max-height:260px;overflow-y:auto}
+
+/* 로그 */
+.log-item{display:flex;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px solid var(--border)}
+.log-item:last-child{border-bottom:none}
+.log-time{font-size:11px;color:var(--text3);font-family:monospace;white-space:nowrap;margin-top:1px;min-width:80px}
+.log-msg{font-size:13px;color:var(--text);flex:1}
+.log-badge{font-size:10px;font-weight:700;padding:2px 7px;border-radius:4px;flex-shrink:0}
+
+/* 탭 안 페이지 */
+.page{display:none}.page.on{display:block}
+.stock-edit{display:inline-flex;align-items:center;gap:4px}
+.stock-input{width:44px;padding:3px 6px;font-size:12px;border:1px solid var(--border-hover);border-radius:var(--radius-sm);text-align:center;font-family:inherit;outline:none;background:var(--surface)}
+.stock-input:focus{border-color:var(--accent)}
+.stock-save,.stock-cancel{padding:3px 8px;font-size:12px;font-weight:500;border-radius:var(--radius-sm);cursor:pointer;font-family:inherit;white-space:nowrap;height:24px;line-height:18px}
+.stock-save{background:var(--accent);color:#fff;border:none}
+.stock-save:hover{background:#333}
+.stock-cancel{background:none;border:1px solid var(--border);color:var(--text3)}
+.stock-cancel:hover{background:var(--bg)}
+
+/* 온라인 대기 드롭다운 */
+.pending-orders-row td{padding:0;border-bottom:none}
+.pending-orders-wrap{background:var(--green-bg);border-bottom:1px solid #b8dfc4;padding:10px 14px 10px 60px;display:flex;flex-direction:column;gap:6px}
+.pending-order-item{display:flex;align-items:center;gap:10px;font-size:12px}
+.pending-order-item .mono{font-size:11px}
+.pending-badge-btn{display:inline-flex;align-items:center;gap:5px;cursor:pointer;background:none;border:none;padding:0;font-family:inherit}
+.pending-badge-btn:hover .badge{opacity:.8}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- 사이드바 -->
+<aside class="sidebar">
+  <div class="brand">
+    <div class="brand-dot"><i class="ti ti-package"></i></div>
+    <div>
+      <div class="brand-name">재고 관리</div>
+      <div class="brand-sub">Admin Dashboard</div>
+    </div>
+  </div>
+  <nav class="nav">
+    <button class="nav-item on" onclick="switchPage('inventory',this)"><i class="ti ti-layout-dashboard"></i> 재고 현황</button>
+    <button class="nav-item" onclick="switchPage('upload',this)"><i class="ti ti-file-spreadsheet"></i> 상품 추가</button>
+    <button class="nav-item" onclick="switchPage('logs',this)"><i class="ti ti-list-details"></i> 동기화 로그</button>
+    <button class="nav-item" onclick="switchPage('receipts',this)"><i class="ti ti-receipt"></i> 주문서</button>
+    <button class="nav-item" onclick="switchPage('orders',this)"><i class="ti ti-shopping-cart"></i> 온라인 주문</button>
+    <button class="nav-item" style="margin-top:auto" onclick="window.open('pos.html','_blank')"><i class="ti ti-barcode"></i> POS 화면 열기 ↗</button>
+  </nav>
+  <div class="sidebar-footer">
+    <span class="status-dot"></span><span id="conn-status">서버 연결 중...</span>
+  </div>
+</aside>
+
+<!-- 메인 -->
+<main class="main">
+
+  <!-- 재고 현황 -->
+  <div id="page-inventory" class="page on">
+    <div class="page-header">
+      <div>
+        <div class="page-title">재고 현황</div>
+        <div class="page-sub" id="last-sync-text">마지막 동기화: -</div>
+      </div>
+      <div class="header-actions">
+        <button class="btn" onclick="loadInventory()"><i class="ti ti-refresh"></i> 새로고침</button>
+        <button class="btn btn-primary" onclick="syncAll()"><i class="ti ti-cloud-upload"></i> 전체 동기화</button>
+      </div>
+    </div>
+
+    <div class="metrics">
+      <div class="metric"><div class="metric-label">전체 상품</div><div class="metric-val" id="m-total">-</div><div class="metric-sub">등록된 SKU</div></div>
+      <div class="metric"><div class="metric-label">재고 부족</div><div class="metric-val metric-warn" id="m-low">-</div><div class="metric-sub">10개 미만</div></div>
+      <div class="metric"><div class="metric-label">온라인 대기</div><div class="metric-val metric-danger" id="m-pending">-</div><div class="metric-sub">처리 필요 주문</div></div>
+      <div class="metric"><div class="metric-label">미동기화</div><div class="metric-val" id="m-unsync">-</div><div class="metric-sub">네이버 미반영</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header">
+        <div class="panel-title"><i class="ti ti-package"></i> 상품 목록</div>
+        <div style="display:flex;gap:8px;align-items:center">
+          <div class="search-wrap">
+            <i class="ti ti-search"></i>
+            <input type="text" placeholder="상품명, 바코드 검색..." oninput="filterTable(this.value)" id="search-input">
+          </div>
+          <select id="filter-select" onchange="filterTable(document.getElementById('search-input').value)" style="width:120px">
+            <option value="">전체</option>
+            <option value="low">재고 부족</option>
+            <option value="pending">온라인 대기</option>
+            <option value="unsync">미동기화</option>
+          </select>
+        </div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>이미지</th>
+            <th>상품명</th>
+            <th>바코드</th>
+            <th>오프라인 재고</th>
+            <th>네이버 재고</th>
+            <th>가격</th>
+            <th>온라인 대기</th>
+            <th>상태</th>
+            <th>동기화</th>
+          </tr>
+        </thead>
+        <tbody id="product-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 상품 추가 -->
+  <div id="page-upload" class="page">
+    <div class="page-header">
+      <div>
+        <div class="page-title">상품 추가</div>
+        <div class="page-sub">엑셀 파일 업로드로 상품을 일괄 등록합니다</div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title"><i class="ti ti-upload"></i> 엑셀 업로드</div></div>
+      <div class="panel-body">
+        <div class="upload-zone" id="upload-zone"
+          onclick="document.getElementById('file-input').click()"
+          ondragover="event.preventDefault();this.classList.add('drag')"
+          ondragleave="this.classList.remove('drag')"
+          ondrop="event.preventDefault();this.classList.remove('drag');handleDrop(event)">
+          <i class="ti ti-file-spreadsheet"></i>
+          <h3>파일을 드래그하거나 클릭하여 업로드</h3>
+          <p>네이버 스마트스토어 상품 목록 엑셀 파일</p>
+          <small>.xlsx 형식 · 6행부터 상품 목록 · A열: 채널상품번호</small>
+        </div>
+        <input type="file" id="file-input" accept=".xlsx,.xls" onchange="uploadExcel(this.files[0])">
+
+        <div class="result-panel" id="result-panel">
+          <div class="result-header"><i class="ti ti-check"></i> 업로드 결과</div>
+          <div class="result-stats" id="result-stats"></div>
+          <table class="result-items">
+            <thead><tr><th>상품명</th><th>채널번호</th><th>원상품번호</th><th>재고</th><th>결과</th></tr></thead>
+            <tbody id="result-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title"><i class="ti ti-info-circle"></i> 업로드 형식 안내</div></div>
+      <div class="panel-body">
+        <table>
+          <thead><tr><th>행/열</th><th>내용</th><th>필수</th></tr></thead>
+          <tbody>
+            <tr><td>1~5행</td><td>제목행 — 자동으로 건너뜁니다</td><td>-</td></tr>
+            <tr><td>6행부터</td><td>상품 데이터 시작</td><td>-</td></tr>
+            <tr><td class="mono">A열</td><td>채널상품번호 (스마트스토어 URL의 숫자)</td><td><span class="badge badge-ok">필수</span></td></tr>
+            <tr><td>나머지</td><td>상품명, 판매가, 재고 — 네이버 API에서 자동 조회</td><td><span class="badge badge-gray">자동</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- 동기화 로그 -->
+  <div id="page-logs" class="page">
+    <div class="page-header">
+      <div><div class="page-title">동기화 로그</div><div class="page-sub">재고 변경 및 동기화 이력</div></div>
+      <button class="btn" onclick="loadLogs()"><i class="ti ti-refresh"></i> 새로고침</button>
+    </div>
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title"><i class="ti ti-list-details"></i> 최근 로그</div></div>
+      <div class="panel-body" id="log-list" style="max-height:600px;overflow-y:auto"></div>
+    </div>
+  </div>
+
+  <!-- 주문서 -->
+  <div id="page-receipts" class="page">
+    <div class="page-header">
+      <div><div class="page-title">주문서</div><div class="page-sub">오프라인 판매 내역 (오늘 기준)</div></div>
+      <button class="btn" onclick="loadReceipts()"><i class="ti ti-refresh"></i> 새로고침</button>
+    </div>
+
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px" id="receipt-metrics">
+      <div class="metric"><div class="metric-label">총 거래 수</div><div class="metric-val" id="r-count">-</div></div>
+      <div class="metric"><div class="metric-label">총 판매 수량</div><div class="metric-val" id="r-qty">-</div></div>
+      <div class="metric"><div class="metric-label">총 매출</div><div class="metric-val" id="r-sales">-</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title"><i class="ti ti-receipt"></i> 판매 내역</div></div>
+      <table>
+        <thead>
+          <tr>
+            <th>시각</th><th>상품명</th><th>바코드</th><th>변경 내역</th><th>금액</th>
+          </tr>
+        </thead>
+        <tbody id="receipts-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 온라인 주문 -->
+  <div id="page-orders" class="page">
+    <div class="page-header">
+      <div><div class="page-title">온라인 주문 현황</div><div class="page-sub">네이버 스마트스토어 주문 수집 내역</div></div>
+      <div class="header-actions">
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="registered-only" checked onchange="loadOrders()"> 오프라인 등록 상품만
+        </label>
+        <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+          <input type="checkbox" id="unprocessed-only" onchange="loadOrders()"> 미처리만 보기
+        </label>
+        <button class="btn" onclick="forceCollectOrders(this)"><i class="ti ti-download"></i> 오늘 주문 재수집</button>
+        <button class="btn" onclick="loadOrders()"><i class="ti ti-refresh"></i> 새로고침</button>
+      </div>
+    </div>
+
+    <div class="metrics" style="grid-template-columns:repeat(3,1fr)">
+      <div class="metric"><div class="metric-label">전체 주문</div><div class="metric-val" id="o-total">-</div><div class="metric-sub">수집된 주문</div></div>
+      <div class="metric"><div class="metric-label">미처리</div><div class="metric-val metric-danger" id="o-pending">-</div><div class="metric-sub">처리 대기 중</div></div>
+      <div class="metric"><div class="metric-label">처리 완료</div><div class="metric-val metric-ok" id="o-done">-</div><div class="metric-sub">배송완료/구매확정</div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-header"><div class="panel-title"><i class="ti ti-shopping-cart"></i> 주문 목록</div></div>
+      <table>
+        <thead>
+          <tr>
+            <th>이미지</th>
+            <th>주문번호</th>
+            <th>상품명</th>
+            <th>배송</th>
+            <th>수량</th>
+            <th>금액</th>
+            <th>처리 상태</th>
+            <th>확인</th>
+          </tr>
+        </thead>
+        <tbody id="orders-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+const API = 'http://localhost:8000';
+let allProducts = [];
+let allOnlineOrders = []; // 재고 현황 탭에서 참조용
+
+async function req(path, opts={}) {
+  try {
+    const r = await fetch(API + path, {headers:{'Content-Type':'application/json'}, ...opts});
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+function toKST(utcStr) {
+  const d = new Date(utcStr);
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit'});
+}
+
+function toKSTFull(utcStr) {
+  const d = new Date(utcStr);
+  const kst = new Date(d.getTime() + 9 * 60 * 60 * 1000);
+  return kst.toLocaleString('ko-KR', {month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit'});
+}
+
+function switchPage(id, btn) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('on'));
+  document.querySelectorAll('.nav-item').forEach(b => b.classList.remove('on'));
+  document.getElementById('page-' + id).classList.add('on');
+  btn.classList.add('on');
+  if(id === 'inventory') { loadInventory(); loadOrders(); }
+  if(id === 'logs') loadLogs();
+  if(id === 'orders') loadOrders();
+  if(id === 'receipts') loadReceipts();
+}
+
+async function checkHealth() {
+  const data = await req('/health');
+  const el = document.getElementById('conn-status');
+  if(data && data.server === 'ok') {
+    el.textContent = data.naver_api === 'connected' ? '네이버 연결됨' : '네이버 미연결';
+  } else {
+    el.textContent = '서버 오프라인';
+  }
+}
+
+async function loadInventory() {
+  const data = await req('/products');
+  if(!data) return;
+  allProducts = data;
+  renderTable(data);
+  updateMetrics(data);
+  const now = new Date();
+  const kst = new Date(now.getTime() + 9*60*60*1000);
+  document.getElementById('last-sync-text').textContent = '마지막 새로고침: ' + kst.toLocaleTimeString('ko-KR');
+}
+
+function updateMetrics(list) {
+  document.getElementById('m-total').textContent = list.length;
+  document.getElementById('m-low').textContent = list.filter(p => p.offline_stock < 10).length;
+  document.getElementById('m-pending').textContent = list.reduce((s,p) => s + (p.pending_online_orders||0), 0);
+  document.getElementById('m-unsync').textContent = list.filter(p => !p.is_synced).length;
+}
+
+function renderTable(list) {
+  const tbody = document.getElementById('product-tbody');
+  if(!list.length) {
+    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--text3)">등록된 상품이 없습니다</td></tr>';
+    return;
+  }
+  const rows = [];
+  list.forEach(p => {
+    const offClass = p.offline_stock === 0 ? 'badge-zero' : p.offline_stock < 10 ? 'badge-low' : 'badge-ok';
+    const navClass = p.naver_stock === 0 ? 'badge-zero' : p.naver_stock < 10 ? 'badge-low' : 'badge-ok';
+    const naverStatus = p.naver_status_type;
+    let statusBadge;
+    if (naverStatus === 'SUSPENSION') {
+      statusBadge = '<span class="badge badge-gray">판매중지</span>';
+    } else if (naverStatus === 'OUTOFSTOCK' || p.naver_stock === 0) {
+      statusBadge = '<span class="badge badge-zero">품절</span>';
+    } else {
+      statusBadge = '<span class="badge badge-ok">판매중</span>';
+    }
+
+    // 온라인 대기: 클릭 토글
+    let pendingCell;
+    if(p.pending_online_orders > 0) {
+      pendingCell = `<button class="pending-badge-btn" onclick="togglePendingOrders(${p.id}, this)">
+        <span class="badge badge-zero" id="pending-badge-${p.id}">
+          <i class="ti ti-chevron-down" style="font-size:10px"></i>
+          ${p.pending_online_orders}건 대기
+        </span>
+      </button>`;
+    } else {
+      pendingCell = '-';
+    }
+
+    rows.push(`<tr id="product-row-${p.id}">
+      <td>${p.naver_image_url
+        ? `<img class="prod-img" src="${p.naver_image_url}" alt="${p.name}" loading="lazy">`
+        : `<div class="prod-img-placeholder"><i class="ti ti-photo"></i></div>`
+      }</td>
+      <td style="font-weight:500;max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${p.name}</td>
+      <td class="mono">${p.barcode}</td>
+      <td onclick="editOfflineStock(this, ${p.id}, ${p.offline_stock})" style="cursor:pointer" title="클릭하여 수정">
+        <span class="badge ${offClass}" id="stock-badge-${p.id}">${p.offline_stock}개</span>
+      </td>
+      <td><span class="badge ${navClass}">${p.naver_stock}개</span></td>
+      <td style="font-size:13px;font-weight:500">₩${(p.offline_price||p.naver_sale_price||0).toLocaleString()}</td>
+      <td id="pending-cell-${p.id}">${pendingCell}</td>
+      <td>${statusBadge}</td>
+      <td>
+        <button class="btn btn-sm" onclick="syncProduct(${p.id})"><i class="ti ti-refresh"></i> 동기화</button>
+      </td>
+    </tr>`);
+  });
+  tbody.innerHTML = rows.join('');
+}
+
+function filterTable(q) {
+  const filter = document.getElementById('filter-select').value;
+  let list = allProducts.filter(p =>
+    p.name.includes(q) || p.barcode.includes(q)
+  );
+  if(filter === 'low') list = list.filter(p => p.offline_stock < 10);
+  if(filter === 'pending') list = list.filter(p => p.pending_online_orders > 0);
+  if(filter === 'unsync') list = list.filter(p => !p.is_synced);
+  renderTable(list);
+}
+
+async function syncProduct(id) {
+  const data = await req(`/products/${id}/sync`, {method:'POST'});
+  if(data && data.success) {
+    alert(`동기화 완료: ${data.product_name} (재고 ${data.naver_stock_after}개)`);
+    loadInventory();
+  } else {
+    alert('동기화 실패: ' + (data?.message || '서버 오류'));
+  }
+}
+
+async function syncAll() {
+  const data = await req('/sync/all', {method:'POST'});
+  if(data) {
+    alert(`전체 동기화 완료\n성공: ${data.succeeded}건 / 실패: ${data.failed}건`);
+    loadInventory();
+  }
+}
+
+async function uploadExcel(file) {
+  if(!file) return;
+  const zone = document.getElementById('upload-zone');
+  zone.innerHTML = '<i class="ti ti-loader" style="font-size:40px;display:block;margin-bottom:12px"></i><h3>업로드 중...</h3><p>잠시만 기다려주세요</p>';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const r = await fetch(API + '/products/import/excel', {method:'POST', body:fd});
+    const data = await r.json();
+    showResult(data);
+  } catch(e) {
+    alert('업로드 실패. 서버 연결을 확인해주세요.');
+  }
+  zone.innerHTML = '<i class="ti ti-file-spreadsheet" style="font-size:40px;display:block;margin-bottom:12px"></i><h3>다른 파일 업로드</h3><p>클릭하거나 드래그하여 파일을 선택하세요</p>';
+  document.getElementById('file-input').value = '';
+}
+
+function handleDrop(e) {
+  const file = e.dataTransfer.files[0];
+  if(file) uploadExcel(file);
+}
+
+function showResult(data) {
+  const panel = document.getElementById('result-panel');
+  panel.classList.add('on');
+  document.getElementById('result-stats').innerHTML = `
+    <div class="result-stat"><div class="result-stat-val">${data.total}</div><div class="result-stat-label">전체</div></div>
+    <div class="result-stat"><div class="result-stat-val" style="color:var(--green)">${data.succeeded}</div><div class="result-stat-label">등록 성공</div></div>
+    <div class="result-stat"><div class="result-stat-val" style="color:var(--amber)">${data.skipped}</div><div class="result-stat-label">업데이트</div></div>
+    <div class="result-stat"><div class="result-stat-val" style="color:var(--red)">${data.failed}</div><div class="result-stat-label">실패</div></div>
+  `;
+  document.getElementById('result-tbody').innerHTML = data.results.map(r => {
+    const badge = r.status === 'created' ? '<span class="badge badge-ok">등록</span>'
+      : r.status === 'updated' ? '<span class="badge badge-blue">업데이트</span>'
+      : `<span class="badge badge-zero">${r.error?.substring(0,30)||'실패'}</span>`;
+    return `<tr>
+      <td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r.name||'-'}</td>
+      <td class="mono">${r.channel_id}</td>
+      <td class="mono">${r.origin_id||'-'}</td>
+      <td>${r.naver_stock !== undefined ? r.naver_stock + '개' : '-'}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+}
+
+async function loadLogs() {
+  const data = await req('/logs?limit=100');
+  if(!data) return;
+  const el = document.getElementById('log-list');
+  if(!data.length) { el.innerHTML = '<p style="color:var(--text3);text-align:center;padding:2rem">로그가 없습니다</p>'; return; }
+  const actionColors = {SYNC:'badge-ok',SALE:'badge-blue',ERROR:'badge-zero',CREATE:'badge-gray',STOCK_UPDATE:'badge-blue'};
+  const actionLabels = {SYNC:'동기화',SALE:'판매',ERROR:'오류',CREATE:'등록',STOCK_UPDATE:'재고수정'};
+  el.innerHTML = data.map(l => `
+    <div class="log-item">
+      <span class="log-time">${toKST(l.created_at)}</span>
+      <span class="log-badge ${actionColors[l.action]||'badge-gray'}">${actionLabels[l.action]||l.action}</span>
+      <span class="log-msg">${l.message}</span>
+    </div>`).join('');
+}
+
+function editOfflineStock(cell, productId, currentStock) {
+  if(cell.querySelector('.stock-input')) return;
+  cell.innerHTML = '<div class="stock-edit">' +
+    '<input class="stock-input" type="number" value="' + currentStock + '" min="0" id="edit-' + productId + '" onclick="event.stopPropagation()">' +
+    '<button class="stock-save" onclick="event.stopPropagation();saveOfflineStock(' + productId + ')">저장</button>' +
+    '<button class="stock-cancel" onclick="event.stopPropagation();loadInventory()">취소</button>' +
+    '</div>';
+  setTimeout(() => {
+    const inp = document.getElementById('edit-' + productId);
+    if(inp) { inp.focus(); inp.select(); }
+  }, 50);
+}
+
+async function saveOfflineStock(productId) {
+  const inp = document.getElementById('edit-' + productId);
+  if(!inp) return;
+  const newStock = parseInt(inp.value);
+  if(isNaN(newStock) || newStock < 0) { alert('올바른 수량을 입력해주세요.'); return; }
+
+  const data = await req('/products/' + productId + '/stock', {
+    method: 'PUT',
+    body: JSON.stringify({offline_stock: newStock, sync_to_naver: false})
+  });
+
+  if(data && data.id) {
+    const idx = allProducts.findIndex(p => p.id === productId);
+    if(idx !== -1) allProducts[idx].offline_stock = newStock;
+    loadInventory();
+  } else {
+    alert('저장 실패. 다시 시도해주세요.');
+  }
+}
+
+async function loadReceipts() {
+  const orders = await req('/offline-orders?limit=200');
+  if(!orders) return;
+
+  let grandTotal = 0, grandQty = 0;
+  orders.forEach(o => { grandTotal += o.total_amount; grandQty += o.total_qty; });
+
+  document.getElementById('r-count').textContent = orders.length + '건';
+  document.getElementById('r-qty').textContent = grandQty + '개';
+  document.getElementById('r-sales').textContent = '₩' + grandTotal.toLocaleString();
+
+  const panel = document.querySelector('#page-receipts .panel');
+  panel.innerHTML = '<div class="panel-header"><div class="panel-title"><i class="ti ti-receipt"></i> 판매 영수증</div></div>' +
+    '<div style="padding:16px;display:flex;flex-direction:column;gap:12px">' +
+    (orders.length === 0
+      ? '<p style="text-align:center;padding:2rem;color:var(--text3)">판매 내역이 없습니다</p>'
+      : orders.map(o => {
+          const time = toKSTFull(o.created_at);
+          return '<div style="border:1px solid var(--border);border-radius:var(--radius);overflow:hidden">' +
+            '<div style="background:var(--bg);padding:10px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)">' +
+              '<span style="font-size:13px;font-weight:600">주문 #' + o.id + '</span>' +
+              '<span style="font-size:12px;color:var(--text3)">' + time + '</span>' +
+            '</div>' +
+            '<div style="padding:12px 16px">' +
+              '<table style="width:100%;font-size:13px;border-collapse:collapse">' +
+                '<thead><tr>' +
+                  '<th style="text-align:left;font-size:11px;color:var(--text3);padding:4px 0;font-weight:500;border-bottom:1px solid var(--border)">상품명</th>' +
+                  '<th style="text-align:center;font-size:11px;color:var(--text3);padding:4px 0;font-weight:500;border-bottom:1px solid var(--border);width:50px">수량</th>' +
+                  '<th style="text-align:right;font-size:11px;color:var(--text3);padding:4px 0;font-weight:500;border-bottom:1px solid var(--border);width:100px">금액</th>' +
+                '</tr></thead>' +
+                '<tbody>' +
+                  o.items.map(item =>
+                    '<tr>' +
+                      '<td style="padding:6px 0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:220px">' + (item.product_name || '-') + '</td>' +
+                      '<td style="text-align:center;padding:6px 0;color:var(--text2)">×' + item.quantity + '</td>' +
+                      '<td style="text-align:right;padding:6px 0;font-weight:500">' + (item.unit_price ? '₩' + item.subtotal.toLocaleString() : '-') + '</td>' +
+                    '</tr>'
+                  ).join('') +
+                '</tbody>' +
+              '</table>' +
+            '</div>' +
+            '<div style="background:var(--accent);color:#fff;padding:10px 16px;display:flex;justify-content:space-between;align-items:center">' +
+              '<span style="font-size:13px;font-weight:500">합계 ' + o.total_qty + '개</span>' +
+              '<span style="font-size:16px;font-weight:700">₩' + o.total_amount.toLocaleString() + '</span>' +
+            '</div>' +
+          '</div>';
+        }).join('')
+    ) +
+    '</div>';
+}
+
+async function forceCollectOrders(btn) {
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader"></i> 수집 중...';
+  const result = await req('/online-orders/force-collect', {method: 'POST'});
+  btn.disabled = false;
+  btn.innerHTML = '<i class="ti ti-download"></i> 오늘 주문 재수집';
+  if(result) {
+    alert(result.message + '\n(조회: ' + result.collected + '건 / 신규저장: ' + result.saved + '건)');
+    loadOrders();
+  }
+}
+
+async function loadOrders() {
+  const unprocessed = document.getElementById('unprocessed-only').checked;
+  const registered = document.getElementById('registered-only').checked;
+  const data = await req('/online-orders?limit=500&unprocessed_only=' + unprocessed + '&registered_only=' + registered);
+  if(!data) return;
+  allOnlineOrders = data; // 재고 현황 탭에서 참조
+
+  document.getElementById('o-total').textContent = data.length;
+  document.getElementById('o-pending').textContent = data.filter(o => !o.is_processed).length;
+  document.getElementById('o-done').textContent = data.filter(o => o.is_processed).length;
+
+  const statusLabels = {
+    PAYED: '결제완료', PAY_DONE: '결제완료', PRODUCT_PREPARE: '상품준비중',
+    DELIVERING: '배송중', DELIVER_ING: '배송중',
+    DELIVERED: '배송완료', PURCHASE_DECIDED: '구매확정',
+    CANCELED: '취소완료', RETURNED: '반품완료', EXCHANGED: '교환완료',
+  };
+  const statusClass = {
+    PAYED: 'badge-zero', PAY_DONE: 'badge-zero', PRODUCT_PREPARE: 'badge-low',
+    DELIVERING: 'badge-blue', DELIVER_ING: 'badge-blue',
+    DELIVERED: 'badge-ok', PURCHASE_DECIDED: 'badge-ok',
+    CANCELED: 'badge-gray', RETURNED: 'badge-gray', EXCHANGED: 'badge-gray',
+  };
+  const deliveryLabels = {
+    PARCEL: '택배', VISIT_RECEIPT: '방문수령',
+    DIRECT_DELIVERY: '직접배송', QUICK: '퀵서비스',
+  };
+
+  const tbody = document.getElementById('orders-tbody');
+  if(!data.length) {
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:3rem;color:var(--text3)">수집된 주문이 없습니다</td></tr>';
+    return;
+  }
+
+  // orderId 기준 그룹핑
+  const grouped = {};
+  data.forEach(o => {
+    const key = o.order_id || o.product_order_id;
+    if(!grouped[key]) grouped[key] = [];
+    grouped[key].push(o);
+  });
+
+  const rows = [];
+  Object.entries(grouped).forEach(([orderId, items]) => {
+    const first = items[0];
+    const label = statusLabels[first.order_status] || first.order_status;
+    const cls = statusClass[first.order_status] || 'badge-gray';
+    const time = toKST(first.created_at);
+    const orderTotal = items.reduce((s, i) => s + (i.unit_price || 0) * i.quantity, 0);
+    const orderQty = items.reduce((s, i) => s + i.quantity, 0);
+
+    // 주문 묶음 헤더
+    rows.push(
+      '<tr style="background:var(--bg);border-top:2px solid var(--border-hover)">' +
+        '<td></td>' +
+        '<td class="mono" style="font-size:11px;font-weight:700;color:var(--text)">' + orderId + '</td>' +
+        '<td colspan="3" style="font-size:12px;color:var(--text2)">' + items.length + '개 상품 · ' + time + '</td>' +
+        '<td style="font-size:14px;font-weight:700">₩' + (orderTotal > 0 ? orderTotal.toLocaleString() : '-') + '</td>' +
+        '<td><span class="badge ' + cls + '">' + label + '</span></td>' +
+        '<td></td>' +
+      '</tr>'
+    );
+
+    // 상품 행
+    items.forEach(o => {
+      const isAddon = o.product_class === '추가구성상품';
+      const classBadge = isAddon
+        ? '<span class="badge badge-gray" style="font-size:10px;margin-right:4px">추가구성</span>'
+        : '';
+      const deliveryLabel = deliveryLabels[o.delivery_method] || o.delivery_method || '-';
+
+      // allProducts에서 이미지 찾기
+      const matched = allProducts.find(p => p.id === o.product_id);
+      const imgCell = matched?.naver_image_url
+        ? '<img class="prod-img" src="' + matched.naver_image_url + '" alt="" loading="lazy" style="width:36px;height:36px">'
+        : '<div class="prod-img-placeholder" style="width:36px;height:36px"><i class="ti ti-photo" style="font-size:15px"></i></div>';
+
+      const confirmBtn = (!o.is_processed && o.product_id)
+        ? '<button class="btn btn-sm btn-confirm" onclick="confirmOnlineOrder(' + o.id + ', this)">' +
+            '<i class="ti ti-check"></i> 확인</button>'
+        : '';
+
+      rows.push(
+        '<tr>' +
+          '<td style="padding:8px 14px">' + imgCell + '</td>' +
+          '<td style="padding-left:20px;color:var(--text3);font-size:11px;font-family:monospace">' + o.product_order_id + '</td>' +
+          '<td style="max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">' +
+            classBadge + (o.product_name || '-') + '</td>' +
+          '<td style="font-size:12px;color:var(--text2)">' + deliveryLabel + '</td>' +
+          '<td>' + o.quantity + '개</td>' +
+          '<td style="font-size:13px;font-weight:500">' +
+            (o.unit_price ? '₩' + (o.unit_price * o.quantity).toLocaleString() : '-') + '</td>' +
+          '<td>' + (o.is_processed
+            ? '<span class="badge badge-ok">처리완료</span>'
+            : '<span class="badge badge-zero">대기중</span>') + '</td>' +
+          '<td>' + confirmBtn + '</td>' +
+        '</tr>'
+      );
+    });
+
+    // 합계 행
+    rows.push(
+      '<tr style="background:var(--bg)">' +
+        '<td colspan="4" style="padding-left:20px;font-size:12px;color:var(--text3)">합계</td>' +
+        '<td style="font-size:13px;font-weight:600">' + orderQty + '개</td>' +
+        '<td style="font-size:14px;font-weight:700;color:var(--text)">' +
+          (orderTotal > 0 ? '₩' + orderTotal.toLocaleString() : '-') + '</td>' +
+        '<td colspan="2"></td>' +
+      '</tr>'
+    );
+  });
+
+  tbody.innerHTML = rows.join('');
+}
+
+async function confirmOnlineOrder(orderLogId, btn, fromInventory) {
+  if(!confirm('오프라인 재고를 차감하고 처리 완료로 변경하시겠습니까?')) return;
+  btn.disabled = true;
+  btn.innerHTML = '<i class="ti ti-loader"></i>';
+  const result = await req('/online-orders/' + orderLogId + '/confirm', {method: 'POST'});
+  if(result && result.success) {
+    loadInventory();
+    if(fromInventory) {
+      // 재고 현황 탭에서 호출 시 해당 상품 드롭다운 갱신
+      const wrap = btn.closest('.pending-orders-wrap');
+      const item = btn.closest('.pending-order-item');
+      if(item) item.remove();
+      if(wrap && wrap.querySelectorAll('.pending-order-item').length === 0) {
+        const row = wrap.closest('tr');
+        if(row) row.remove();
+      }
+    } else {
+      loadOrders();
+    }
+  } else {
+    alert('처리 실패: ' + (result?.detail || '서버 오류'));
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ti ti-check"></i> 확인';
+  }
+}
+
+function togglePendingOrders(productId, btn) {
+  const tbody = document.getElementById('product-tbody');
+  const productRow = document.getElementById('product-row-' + productId);
+  const existingDropRow = document.getElementById('pending-drop-' + productId);
+
+  // 이미 열려있으면 닫기
+  if(existingDropRow) {
+    existingDropRow.remove();
+    const icon = btn.querySelector('i');
+    if(icon) { icon.className = 'ti ti-chevron-down'; icon.style.fontSize='10px'; }
+    return;
+  }
+
+  // 해당 상품의 미처리 주문 찾기
+  const pendingOrders = allOnlineOrders.filter(o => o.product_id === productId && !o.is_processed);
+  if(!pendingOrders.length) return;
+
+  const icon = btn.querySelector('i');
+  if(icon) { icon.className = 'ti ti-chevron-up'; icon.style.fontSize='10px'; }
+
+  const statusLabels = {
+    PAYED: '결제완료', PAY_DONE: '결제완료', PRODUCT_PREPARE: '상품준비중',
+    DELIVERING: '배송중', DELIVERED: '배송완료', PURCHASE_DECIDED: '구매확정',
+    CANCELED: '취소', RETURNED: '반품', EXCHANGED: '교환',
+  };
+
+  const itemsHtml = pendingOrders.map(o => {
+    const label = statusLabels[o.order_status] || o.order_status;
+    return `<div class="pending-order-item">
+      <span class="mono">${o.product_order_id}</span>
+      <span class="badge badge-low" style="font-size:10px">${label}</span>
+      <span style="color:var(--text2)">×${o.quantity}개</span>
+      ${o.unit_price ? `<span style="font-weight:600;color:var(--text)">₩${(o.unit_price * o.quantity).toLocaleString()}</span>` : ''}
+      <button class="btn btn-sm btn-confirm" style="margin-left:auto"
+        onclick="confirmOnlineOrder(${o.id}, this, true)">
+        <i class="ti ti-check"></i> 확인
+      </button>
+    </div>`;
+  }).join('');
+
+  const dropRow = document.createElement('tr');
+  dropRow.id = 'pending-drop-' + productId;
+  dropRow.className = 'pending-orders-row';
+  dropRow.innerHTML = `<td colspan="9">
+    <div class="pending-orders-wrap">${itemsHtml}</div>
+  </td>`;
+
+  productRow.insertAdjacentElement('afterend', dropRow);
+}
+
+checkHealth();
+loadInventory();
+loadOrders();
+setInterval(checkHealth, 30000);
+setInterval(loadInventory, 60000);
+</script>
+</body>
+</html>

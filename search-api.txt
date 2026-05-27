@@ -1,0 +1,75 @@
+# POST /v1/products/search - 상품 목록 조회
+
+이 API는 판매자가 보유한 상품을 다양한 키워드·상태·기간 조건으로 검색하여 페이지 단위로 조회할 때 사용하는 v1 상품 목록 조회 엔드포인트입니다. searchKeywordType 으로 채널상품번호·원상품번호·그룹상품번호·판매자 관리 코드 중 어떤 키를 기준으로 조회할지 선택하고 해당 번호 배열 혹은 sellerManagementCode 를 함께 입력하며, productStatusTypes 로 판매 상태를 필터링할 수 있습니다. periodType 과 fromDate/toDate 로는 상품 등록일·판매 시작일·판매 종료일·최종 수정일 중 하나를 기준으로 기간 필터를 걸 수 있어 일·주·월 단위 배치 동기화에 적합합니다. 페이징은 page(1부터 시작)·size(최대 500)·orderType 으로 제어하고 응답에는 contents·page·size·totalElements·totalPages·sort·first·last 가 반환되므로 totalPages 또는 last 플래그로 종료 조건을 판단해 페이지를 끝까지 순회합니다. 일반적인 사용 사례는 ERP 시스템이 일정 주기로 전 상품 상태를 폴링하여 자체 DB 와 동기화하거나, 특정 그룹상품·관리 코드를 조회해 일괄 가격·재고 조정 대상을 추출하는 것입니다. 호출 시 size 를 너무 크게 잡으면 응답 지연이 발생할 수 있으므로 100~200 수준에서 시작해 튜닝하고, 동시에 다수 페이지를 병렬 호출할 때는 레이트 리밋을 고려해 적정 동시성으로 제한해야 합니다. 400 은 입력 형식 오류, 401/403 은 인증·권한 문제, 404 는 자원 부재, 500 은 일시 장애이므로 입력 재검증 또는 백오프 후 재시도로 대응합니다.
+
+> Base URL: https://api.commerce.naver.com/external
+
+### 요청 본문
+
+| 이름 | 위치 | 타입 | 필수 | 설명 |
+|------|------|------|:----:|------|
+| searchKeywordType | body | string |  | - 채널 상품번호(CHANNEL_PRODUCT_NO) 선택 시 채널 상품번호를 입력합니다.<br>- 원상품번호(PRODUCT_NO) 선택 시 채널 원상품번호를 입력합니다.<br>- 그룹상품번호(GROUP_PRODUCT_NO) 선택 시 그룹상품번호를 입력합니다.<br>- 판매자 관리 코드(SELLER_CODE) 선택 시 판매자 관리 코드를 입력합니다.. 허용값: `CHANNEL_PRODUCT_NO`, `PRODUCT_NO`, `GROUP_PRODUCT_NO`, `SELLER_CODE` |
+| channelProductNos | body | array |  |  |
+| originProductNos | body | array |  |  |
+| groupProductNos | body | array |  |  |
+| sellerManagementCode | body | string |  |  |
+| productStatusTypes | body | array |  | 조회하려는 상품 판매 상태를 선택합니다.<br>- WAIT(판매 대기), SALE(판매 중), OUTOFSTOCK(품절), UNADMISSION(승인 대기), REJECTION(승인 거부), SUSPENSION(판매 중지), CLOSE(판매 종료), PROHIBITION(판매 금지) |
+| page | body | integer(int32) |  | 첫 번째 페이지 번호는 1입니다. |
+| size | body | integer(int32) |  | 페이지당 최대 500건까지 조회할 수 있습니다. |
+| orderType | body | string |  | - NO(상품번호순), REG_DATE(등록일순), MOD_DATE(수정일순), NAME(상품명순), SELLER_CODE(판매자 상품코드순), LOW_PRICE(판매가 낮은순), HIGH_PRICE(판매가 높은순), POPULARITY(인기도순), ACCUMULATE_SALE(누적판매건수순), LOW_DISCOUNT_PRICE(할인가 낮은순), SALE_START(판매시작일순), SALE_END(판매종료일순). 허용값: `NO`, `NAME`, `SELLER_CODE`, `LOW_PRICE`, `HIGH_PRICE`, `REG_DATE`, `MOD_DATE`, `SALE_START`, `SALE_END`, `POPULARITY`, `ACCUMULATE_SALE`, `LOW_DISCOUNT_PRICE`, `TOTAL_REVIEW_COUNT`, `AVERAGE_REVIEW_SCORE` |
+| periodType | body | string |  | - PROD_REG_DAY(상품 등록일), SALE_START_DAY(판매 시작일), SALE_END_DAY(판매 종료일), PROD_MOD_DAY(최종 수정일). 허용값: `PROD_REG_DAY`, `SALE_START_DAY`, `SALE_END_DAY`, `PROD_MOD_DAY` |
+| fromDate | body | string(date) |  | 'yyyy-MM-dd' 형식 입력. |
+| toDate | body | string(date) |  | 'yyyy-MM-dd' 형식 입력. |
+
+### 응답 스키마
+
+| 이름 | 위치 | 타입 | 필수 | 설명 |
+|------|------|------|:----:|------|
+| contents | - | array |  |  |
+| contents.groupProductNo | - | integer(int64) |  |  |
+| contents.originProductNo | - | integer(int64) |  |  |
+| contents.channelProducts | - | array |  |  |
+| contents.channelProducts.… | - | - |  | 하위 구조 생략 (상세는 OAS 참조) |
+| page | - | integer(int32) |  |  |
+| size | - | integer(int32) |  |  |
+| totalElements | - | integer(int64) |  |  |
+| totalPages | - | integer(int32) |  |  |
+| sort | - | object |  | 정렬 정보 |
+| sort.sorted | - | boolean |  |  |
+| sort.fields | - | array |  |  |
+| sort.fields.… | - | - |  | 하위 구조 생략 (상세는 OAS 참조) |
+| first | - | boolean |  |  |
+| last | - | boolean |  |  |
+
+### 에러 코드
+
+| 상태 코드 | 설명 |
+|-----------|------|
+| 400 | 잘못된 요청<br/>- code : BAD_REQUEST |
+| 401 | 인가되지 않은 요청<br/>- code : UNAUTHORIZED |
+| 403 | 권한 없음<br/>- code : FORBIDDEN |
+| 404 | 데이터 없음<br/>- code : NOT_FOUND |
+| 500 | 내부 서버 오류<br/>- code : INTERNAL_SERVER_ERROR |
+
+### 사용 enum 카탈로그
+
+- 요청 본문 `searchKeywordType`: `CHANNEL_PRODUCT_NO`, `PRODUCT_NO`, `GROUP_PRODUCT_NO`, `SELLER_CODE`
+- 요청 본문 `productStatusTypes[]`: `WAIT`, `SALE`, `OUTOFSTOCK`, `UNADMISSION`, `REJECTION`, `SUSPENSION`, `CLOSE`, `PROHIBITION`, `DELETE`
+- 요청 본문 `orderType`: `NO`, `NAME`, `SELLER_CODE`, `LOW_PRICE`, `HIGH_PRICE`, `REG_DATE`, `MOD_DATE`, `SALE_START`, `SALE_END`, `POPULARITY`, `ACCUMULATE_SALE`, `LOW_DISCOUNT_PRICE`, `TOTAL_REVIEW_COUNT`, `AVERAGE_REVIEW_SCORE`
+- 요청 본문 `periodType`: `PROD_REG_DAY`, `SALE_START_DAY`, `SALE_END_DAY`, `PROD_MOD_DAY`
+- 응답 `contents[].channelProducts[].channelServiceType`: `STOREFARM`, `WINDOW`, `AFFILIATE`
+- 응답 `contents[].channelProducts[].statusType`: `WAIT`, `SALE`, `OUTOFSTOCK`, `UNADMISSION`, `REJECTION`, `SUSPENSION`, `CLOSE`, `PROHIBITION`, `DELETE`
+- 응답 `contents[].channelProducts[].channelProductDisplayStatusType`: `WAIT`, `ON`, `SUSPENSION`
+- 응답 `contents[].channelProducts[].deliveryAttributeType`: `NORMAL`, `TODAY`, `OPTION_TODAY`, `HOPE`, `TODAY_ARRIVAL`, `DAWN_ARRIVAL`, `ARRIVAL_GUARANTEE`, `SELLER_GUARANTEE`, `HOPE_SELLER_GUARANTEE`, `QUICK`, `PICKUP`, `QUICK_PICKUP`
+- 응답 `contents[].channelProducts[].multiPurchaseDiscountUnitType`: `PERCENT`, `WON`
+- 응답 `contents[].channelProducts[].sellerPurchasePointUnitType`: `PERCENT`, `WON`
+- 응답 `sort.fields[].direction`: `ASC`, `DESC`
+
+### 호출 예시
+
+```bash
+curl -X POST 'https://api.commerce.naver.com/external/v1/products/search' \
+  -H 'Authorization: Bearer {access_token}' \
+  -H 'Content-Type: application/json' \
+  -d '{ ... }'
+```

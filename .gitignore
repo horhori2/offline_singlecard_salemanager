@@ -1,0 +1,51 @@
+# 환경변수 / 시크릿 (절대 커밋 금지)
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+.eggs/
+
+# 가상환경
+venv/
+.venv/
+env/
+.env/
+
+# DB 파일 (로컬 SQLite)
+*.db
+*.sqlite
+*.sqlite3
+
+# 로그
+*.log
+logs/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+
+# pytest
+.pytest_cache/
+.coverage
+htmlcov/
+
+# mypy
+.mypy_cache/
+
+# 업로드 임시 파일
+uploads/
+tmp/
