@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 재고 관리 핵심 비즈니스 로직
 - 오프라인 재고 차감 (바코드 스캔)

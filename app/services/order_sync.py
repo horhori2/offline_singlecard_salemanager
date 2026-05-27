@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 네이버 온라인 주문 변경분 수집 + 재고 검증 서비스
 """

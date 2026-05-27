@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 네이버 커머스 API 클라이언트
 https://apicenter.commerce.naver.com/ko/reference
