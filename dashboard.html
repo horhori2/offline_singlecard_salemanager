@@ -223,6 +223,8 @@ tr:hover td{background:var(--bg)}
             <th>온라인 대기</th>
             <th>상태</th>
             <th>동기화</th>
+            <th>테스트</th>
+            <th>테스트</th>
           </tr>
         </thead>
         <tbody id="product-tbody"></tbody>
@@ -852,7 +854,7 @@ function togglePendingOrders(productId, btn) {
   const dropRow = document.createElement('tr');
   dropRow.id = 'pending-drop-' + productId;
   dropRow.className = 'pending-orders-row';
-  dropRow.innerHTML = `<td colspan="9">
+  dropRow.innerHTML = `<td colspan="8">
     <div class="pending-orders-wrap">${itemsHtml}</div>
   </td>`;
 
