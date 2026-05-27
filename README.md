@@ -39,7 +39,7 @@ cp .env.example .env
 uvicorn app.main:app --reload
 ```
 
-서버 실행 후 `http://localhost:8000` 접속
+서버 실행 후 대쉬보드 : `http://localhost:8000/dashboard.html` 접속
 
 ## 프로젝트 구조
 
