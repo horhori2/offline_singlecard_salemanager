@@ -223,8 +223,7 @@ tr:hover td{background:var(--bg)}
             <th>온라인 대기</th>
             <th>상태</th>
             <th>동기화</th>
-            <th>테스트</th>
-            <th>테스트</th>
+            <th>삭제</th>
           </tr>
         </thead>
         <tbody id="product-tbody"></tbody>
@@ -432,7 +431,7 @@ function updateMetrics(list) {
 function renderTable(list) {
   const tbody = document.getElementById('product-tbody');
   if(!list.length) {
-    tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:3rem;color:var(--text3)">등록된 상품이 없습니다</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:3rem;color:var(--text3)">등록된 상품이 없습니다</td></tr>';
     return;
   }
   const rows = [];
@@ -479,6 +478,9 @@ function renderTable(list) {
       <td>
         <button class="btn btn-sm" onclick="syncProduct(${p.id})"><i class="ti ti-refresh"></i> 동기화</button>
       </td>
+      <td>
+        <button class="btn btn-sm btn-danger" onclick="deleteProduct(${p.id}, '${p.name.replace(/'/g, "\\'")}')"><i class="ti ti-trash"></i> 삭제</button>
+      </td>
     </tr>`);
   });
   tbody.innerHTML = rows.join('');
@@ -493,6 +495,18 @@ function filterTable(q) {
   if(filter === 'pending') list = list.filter(p => p.pending_online_orders > 0);
   if(filter === 'unsync') list = list.filter(p => !p.is_synced);
   renderTable(list);
+}
+
+async function deleteProduct(id, name) {
+  if(!confirm(`「${name}」을(를) DB에서 삭제하시겠습니까?\n※ 네이버 상품에는 영향을 주지 않습니다.`)) return;
+  const r = await fetch(API + '/products/' + id, {method: 'DELETE'});
+  if(r.ok) {
+    allProducts = allProducts.filter(p => p.id !== id);
+    renderTable(allProducts);
+    updateMetrics(allProducts);
+  } else {
+    alert('삭제 실패. 다시 시도해주세요.');
+  }
 }
 
 async function syncProduct(id) {
@@ -854,7 +868,7 @@ function togglePendingOrders(productId, btn) {
   const dropRow = document.createElement('tr');
   dropRow.id = 'pending-drop-' + productId;
   dropRow.className = 'pending-orders-row';
-  dropRow.innerHTML = `<td colspan="8">
+  dropRow.innerHTML = `<td colspan="10">
     <div class="pending-orders-wrap">${itemsHtml}</div>
   </td>`;
 
