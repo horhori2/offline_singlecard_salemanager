@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 엑셀 파일로 상품 일괄 등록
 - 6행부터 상품 목록
